@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="SKY CRED — Check the sky's credit score before you step out." />
+  <title>SKY CRED — Weather Credit Score</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">🌤️</span>
+        <h1>SKY CRED</h1>
+      </div>
+      <p class="tagline">Check the sky's credit score before you step out.</p>
+    </header>
+
+    <!-- Search -->
+    <section class="search-section" aria-label="City search">
+      <form id="search-form" class="search-bar" role="search" novalidate>
+        <label for="search-input" class="sr-only">Enter a city name</label>
+        <input
+          id="search-input"
+          type="text"
+          placeholder="Enter a city name…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button id="search-btn" type="submit" aria-label="Search weather for the entered city">
+          <span aria-hidden="true">🔍</span><span class="btn-text">Search</span>
+        </button>
+      </form>
+      <p id="search-error" class="search-error" role="alert" hidden></p>
+
+      <div class="chips" id="popular-cities" role="list" aria-label="Popular cities">
+        <!-- populated by script.js -->
+      </div>
+    </section>
+
+    <!-- Loading state -->
+    <div id="loading" class="state-block loading" hidden>
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Fetching the sky's credit report…</p>
+    </div>
+
+    <!-- Error state -->
+    <div id="error-state" class="state-block error" hidden>
+      <div class="error-icon" aria-hidden="true">⚠️</div>
+      <h2 id="error-title">Something went wrong</h2>
+      <p id="error-message"></p>
+      <button id="retry-btn" type="button">Retry</button>
+    </div>
+
+    <!-- Weather card -->
+    <main id="weather-card" class="weather-card" hidden>
+      <div class="card-top">
+        <div class="location">
+          <h2 id="w-city" aria-live="polite">—</h2>
+          <p id="w-localtime" class="local-time">Local time: —</p>
+        </div>
+        <div class="condition">
+          <img id="w-icon" src="" alt="" width="64" height="64" />
+          <p id="w-condition">—</p>
+        </div>
+      </div>
+
+      <div class="temp-block">
+        <p class="temp"><span id="w-temp">—</span><span class="unit">°C</span></p>
+        <p class="feels-like">Feels like <span id="w-feelslike">—</span>°C</p>
+      </div>
+
+      <!-- Personality / interpretation -->
+      <div id="personality" class="personality">
+        <p class="personality-label">SKY CRED VERDICT</p>
+        <h3 id="p-title">—</h3>
+        <p id="p-desc">—</p>
+      </div>
+
+      <!-- Primary metrics -->
+      <div class="metrics">
+        <div class="metric">
+          <p class="metric-label">Humidity</p>
+          <p class="metric-value"><span id="m-humidity">—</span><span class="metric-unit">%</span></p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">Wind</p>
+          <p class="metric-value"><span id="m-wind">—</span><span class="metric-unit">km/h</span></p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">UV Index</p>
+          <p class="metric-value"><span id="m-uv">—</span><span class="metric-unit">Index</span></p>
+        </div>
+      </div>
+
+      <!-- Secondary info -->
+      <div class="secondary">
+        <div class="secondary-item"><span>Cloud coverage</span><strong id="s-cloud">—</strong></div>
+        <div class="secondary-item"><span>Visibility</span><strong id="s-visibility">—</strong></div>
+        <div class="secondary-item"><span>Pressure</span><strong id="s-pressure">—</strong></div>
+        <div class="secondary-item"><span>Wind speed</span><strong id="s-windkph">—</strong></div>
+        <div class="secondary-item"><span>Temperature °F</span><strong id="s-tempf">—</strong></div>
+        <div class="secondary-item"><span>Last updated</span><strong id="s-updated">—</strong></div>
+      </div>
+    </main>
+
+    <!-- JSON viewer -->
+    <section class="json-viewer" aria-label="API response viewer">
+      <div class="json-header">
+        <h3>API Response</h3>
+        <div class="tabs" role="tablist" aria-label="JSON view mode">
+          <button id="tab-formatted" class="tab active" role="tab" aria-selected="true" type="button">Formatted</button>
+          <button id="tab-raw" class="tab" role="tab" aria-selected="false" type="button">Raw</button>
+        </div>
+        <button id="copy-btn" type="button" aria-label="Copy JSON to clipboard">Copy</button>
+      </div>
+      <pre id="json-output" class="json-output" tabindex="0" role="tabpanel">Run a search to see the live API response.</pre>
+    </section>
+
+    <footer class="app-footer">
+      <p>Powered by WeatherAPI.com · SKY CRED is an application-generated interpretation, not a real credit score.</p>
+    </footer>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
