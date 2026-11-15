@@ -8,6 +8,11 @@ Search any city, view live current conditions, and get a simple, friendly
 
 ## Features
 
+- **Dynamic theming** — the whole page recolours with the weather:
+  Summer 🔥 (≥ 35 °C), Winter ❄️ (≤ 10 °C / snow), Rainy 🌧️, Windy 🍃 (> 30 km/h), Night 🌙 (after dark), Pleasant 🌤️
+- **City signature colours** — each city carries its famous colour (Mumbai sea-blue, Delhi saffron, Bengaluru green, Hyderabad pearl-violet, Chennai marina-red, Kolkata purple, Pune marigold, Ahmedabad textile-pink, New York navy, London red), so the look stays distinct even when the weather theme matches
+- **City photo backgrounds** — the page backdrop shows each city's famous skyline (fetched live from Wikimedia Commons, cached locally, graceful gradient fallback)
+- **Air quality (AQI)** — US EPA AQI metric card with colour-coded band (Good → Hazardous) plus PM2.5 in secondary info (via WeatherAPI `aqi=yes`)
 - **Default city (Mumbai)** — live weather loads automatically on launch
 - **City search** — button + Enter key, with empty-input validation
 - **Popular city chips** — Mumbai, Delhi, Bengaluru, Hyderabad, Chennai, Kolkata, Pune, Ahmedabad, New York, London (with selected-city highlight)

@@ -6,15 +6,24 @@
   <meta name="description" content="SKY CRED — Check the sky's credit score before you step out." />
   <title>SKY CRED — Weather Credit Score</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌤️</text></svg>" />
+  <!-- Typography: Sora (display) + Inter (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
+<body data-theme="pleasant">
+
+  <!-- Dynamic background: city photo + weather tint -->
+  <div class="bg-photo" id="bg-photo" aria-hidden="true"></div>
+  <div class="bg-tint" aria-hidden="true"></div>
+
   <div class="app">
 
     <!-- Header -->
     <header class="app-header">
       <div class="brand">
-        <span class="brand-icon" aria-hidden="true">🌤️</span>
+        <span class="brand-icon" id="brand-icon" aria-hidden="true">🌤️</span>
         <h1>SKY CRED</h1>
       </div>
       <p class="tagline">Check the sky's credit score before you step out.</p>
@@ -95,6 +104,11 @@
           <p class="metric-label">UV Index</p>
           <p class="metric-value"><span id="m-uv">—</span><span class="metric-unit">Index</span></p>
         </div>
+        <div class="metric metric-aqi">
+          <p class="metric-label">AQI (US EPA)</p>
+          <p class="metric-value"><span id="m-aqi">—</span></p>
+          <p class="aqi-band" id="aqi-band">—</p>
+        </div>
       </div>
 
       <!-- Secondary info -->
@@ -104,6 +118,7 @@
         <div class="secondary-item"><span>Pressure</span><strong id="s-pressure">—</strong></div>
         <div class="secondary-item"><span>Wind speed</span><strong id="s-windkph">—</strong></div>
         <div class="secondary-item"><span>Temperature °F</span><strong id="s-tempf">—</strong></div>
+        <div class="secondary-item"><span>PM2.5</span><strong id="s-pm25">—</strong></div>
         <div class="secondary-item"><span>Last updated</span><strong id="s-updated">—</strong></div>
       </div>
     </main>

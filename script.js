@@ -32,11 +32,14 @@
     mHumidity: document.getElementById("m-humidity"),
     mWind: document.getElementById("m-wind"),
     mUv: document.getElementById("m-uv"),
+    mAqi: document.getElementById("m-aqi"),
+    aqiBand: document.getElementById("aqi-band"),
     sCloud: document.getElementById("s-cloud"),
     sVisibility: document.getElementById("s-visibility"),
     sPressure: document.getElementById("s-pressure"),
     sWindKph: document.getElementById("s-windkph"),
     sTempF: document.getElementById("s-tempf"),
+    sPm25: document.getElementById("s-pm25"),
     sUpdated: document.getElementById("s-updated"),
     tabFormatted: document.getElementById("tab-formatted"),
     tabRaw: document.getElementById("tab-raw"),
@@ -103,12 +106,111 @@
     return PERSONALITIES.perfect;
   }
 
+  /* ================= Weather themes & city signature colours ================= */
+
+  var THEMES = {
+    summer:   { icon: "🔥" },
+    winter:   { icon: "❄️" },
+    rainy:    { icon: "🌧️" },
+    windy:    { icon: "🍃" },
+    night:    { icon: "🌙" },
+    pleasant: { icon: "🌤️" }
+  };
+
+  /* City signature ("famous") colours — vary the look when the weather
+     theme is the same across cities (e.g., Mumbai sea-blue vs Delhi saffron). */
+  var CITY_ACCENTS = [
+    { match: "mumbai",    accent: "#38bdf8" }, // coastal blue (Gateway of India / sea link)
+    { match: "delhi",     accent: "#f59e0b" }, // saffron amber (India Gate sandstone)
+    { match: "bengaluru", accent: "#22c55e" }, // garden green (Garden City)
+    { match: "bangalore", accent: "#22c55e" },
+    { match: "hyderabad", accent: "#a78bfa" }, // pearl violet (City of Pearls)
+    { match: "chennai",   accent: "#ef4444" }, // marina red (fort heritage)
+    { match: "kolkata",   accent: "#c084fc" }, // purple (City of Joy / tram nostalgia)
+    { match: "pune",      accent: "#fb923c" }, // marigold orange (Deccan warmth)
+    { match: "ahmedabad", accent: "#ec4899" }, // textile pink (Manchester of India)
+    { match: "new york",  accent: "#3b82f6" }, // navy blue (Empire State)
+    { match: "london",    accent: "#e11d48" }  // underground red
+  ];
+
+  function getCityAccent(city) {
+    var name = String(city || "").toLowerCase();
+    for (var i = 0; i < CITY_ACCENTS.length; i++) {
+      if (name.indexOf(CITY_ACCENTS[i].match) !== -1) return CITY_ACCENTS[i].accent;
+    }
+    return "#06b6d4"; // default teal
+  }
+
+  function computeTheme(data) {
+    var c = data.current || {};
+    var tempC = typeof c.temp_c === "number" ? c.temp_c : null;
+    var isDay = c.is_day !== 0;
+    var cond = (c.condition && c.condition.text) ? String(c.condition.text).toLowerCase() : "";
+
+    var rainy = isRainy(data);
+    var snowy = cond.indexOf("snow") !== -1 || cond.indexOf("blizzard") !== -1 || cond.indexOf("sleet") !== -1 || cond.indexOf("ice") !== -1;
+
+    if (snowy || (tempC !== null && tempC <= 10)) return "winter";
+    if (rainy) return "rainy";
+    if (!isDay) return "night";
+    if (typeof c.wind_kph === "number" && c.wind_kph > THRESHOLDS.WINDY_KPH) return "windy";
+    if (tempC !== null && tempC >= 35) return "summer";
+    return "pleasant";
+  }
+
+  function applyTheme(theme, city) {
+    document.body.setAttribute("data-theme", theme);
+    document.documentElement.style.setProperty("--city-accent", getCityAccent(city));
+    var iconEl = document.getElementById("brand-icon");
+    if (iconEl && THEMES[theme]) iconEl.textContent = THEMES[theme].icon;
+  }
+
+  /* ================= City background photo (famous place / skyline) ===== */
+
+  function fetchCityPhoto(city) {
+    var key = "skycred:photo:" + String(city).toLowerCase().trim();
+    var cached = null;
+    try { cached = localStorage.getItem(key); } catch (e) { /* storage unavailable */ }
+    if (cached) {
+      setBgPhoto(cached);
+      return;
+    }
+
+    // Free Wikimedia Commons search — no API key, CORS-enabled (origin=*)
+    var query = encodeURIComponent(city.trim() + " skyline city");
+    var url = "https://commons.wikimedia.org/w/api.php?action=query&generator=search" +
+      "&gsrnamespace=6&gsrsearch=" + query + "&gsrlimit=3" +
+      "&prop=imageinfo&iiprop=url&iiurlwidth=1600&format=json&origin=*";
+
+    fetch(url)
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        var pages = data && data.query && data.query.pages ? data.query.pages : {};
+        var found = null;
+        for (var id in pages) {
+          var info = pages[id].imageinfo && pages[id].imageinfo[0];
+          if (info && info.thumburl && /\.(jpe?g|png)(\?|$)/i.test(info.thumburl)) { found = info.thumburl; break; }
+        }
+        if (found) {
+          try { localStorage.setItem(key, found); } catch (e) { /* ignore */ }
+          setBgPhoto(found);
+        }
+      })
+      .catch(function () { /* keep gradient-only background */ });
+  }
+
+  function setBgPhoto(url) {
+    var el = document.getElementById("bg-photo");
+    if (el) el.style.backgroundImage = 'url("' + url + '")';
+  }
+
   /* ================= API (FR-10) ================= */
 
   function buildUrl(city) {
     return CONFIG.WEATHER_API_BASE +
       "?key=" + encodeURIComponent(CONFIG.WEATHER_API_KEY) +
-      "&q=" + encodeURIComponent(city);
+      "&q=" + encodeURIComponent(city) +
+      "&aqi=yes"; // enable air-quality data in current.json response
   }
 
   /**
@@ -197,6 +299,10 @@
 
     state.lastData = data;
 
+    // Dynamic theme (weather-based colours + city signature accent + photo)
+    applyTheme(computeTheme(data), loc.name || lastSearchedCity());
+    fetchCityPhoto(loc.name || lastSearchedCity());
+
     // Location & local time (city timezone, from API)
     el.city.textContent = loc.name + (loc.region ? ", " + loc.region : "") + (loc.country ? ", " + loc.country : "");
     el.localtime.textContent = "Local time: " + (loc.localtime || "—");
@@ -220,10 +326,11 @@
     el.pTitle.textContent = p.title;
     el.pDesc.textContent = p.desc;
 
-    // Primary metrics (FR-06)
+    // Primary metrics (FR-06) + AQI
     el.mHumidity.textContent = fmt(c.humidity);
     el.mWind.textContent = fmt(c.wind_kph);
     el.mUv.textContent = fmt(c.uv);
+    renderAqi(c.air_quality);
 
     // Secondary info (FR-06)
     el.sCloud.textContent = fmt(c.cloud) + " %";
@@ -231,6 +338,8 @@
     el.sPressure.textContent = fmt(c.pressure_mb) + " mb";
     el.sWindKph.textContent = fmt(c.wind_kph) + " km/h";
     el.sTempF.textContent = fmt(c.temp_f) + " °F";
+    el.sPm25.textContent = c.air_quality && typeof c.air_quality.pm2_5 === "number"
+      ? c.air_quality.pm2_5.toFixed(1) + " µg/m³" : "—";
     el.sUpdated.textContent = c.last_updated || "—";
 
     // JSON viewer (FR-07.5)
@@ -241,6 +350,27 @@
 
   function fmt(value) {
     return (value === undefined || value === null) ? "—" : String(value);
+  }
+
+  /* AQI (US EPA index 1–6) classification */
+  var AQI_BANDS = {
+    1: "Good", 2: "Moderate", 3: "Unhealthy (Sensitive)",
+    4: "Unhealthy", 5: "Very Unhealthy", 6: "Hazardous"
+  };
+
+  function renderAqi(airQuality) {
+    var idx = airQuality && airQuality["us-epa-index"] ? airQuality["us-epa-index"] : null;
+    if (idx && AQI_BANDS[idx]) {
+      el.mAqi.textContent = String(idx);
+      el.aqiBand.textContent = AQI_BANDS[idx];
+      el.aqiBand.setAttribute("data-band", AQI_BANDS[idx]);
+      el.aqiBand.hidden = false;
+    } else {
+      el.mAqi.textContent = "—";
+      el.aqiBand.textContent = "Not available";
+      el.aqiBand.setAttribute("data-band", "");
+      el.aqiBand.hidden = false;
+    }
   }
 
   function showError(err) {
@@ -398,6 +528,7 @@
 
   function init() {
     buildChips();
+    document.body.setAttribute("data-theme", "pleasant"); // pre-fetch theme before data arrives
     el.input.value = CONFIG.DEFAULT_CITY; // search input shows default city
     searchCity(CONFIG.DEFAULT_CITY);      // auto-fetch Mumbai weather on launch
   }
