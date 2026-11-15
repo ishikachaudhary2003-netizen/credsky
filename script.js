@@ -109,13 +109,53 @@
   /* ================= Weather themes & city signature colours ================= */
 
   var THEMES = {
-    summer:   { icon: "🔥" },
-    winter:   { icon: "❄️" },
-    rainy:    { icon: "🌧️" },
-    windy:    { icon: "🍃" },
-    night:    { icon: "🌙" },
-    pleasant: { icon: "🌤️" }
+    hot:    { icon: "🔥" },  // red
+    warm:   { icon: "☀️" },  // yellow
+    cool:   { icon: "🌿" },  // green
+    cold:   { icon: "❄️" },  // pink
+    rainy:  { icon: "🌧️" },  // storm blue
+    windy:  { icon: "💨" },  // violet
+    haze:   { icon: "🌫️" },  // smoky grey-amber
+    night:  { icon: "🌙" }   // deep indigo
   };
+
+  /* Priority order handles overlapping conditions:
+     snow/cold → rain → haze → night → wind → hot → warm → cool → cold */
+  function computeTheme(data) {
+    var c = data.current || {};
+    var tempC = typeof c.temp_c === "number" ? c.temp_c : null;
+    var isDay = c.is_day !== 0;
+    var cond = (c.condition && c.condition.text) ? String(c.condition.text).toLowerCase() : "";
+
+    // 1) Snow or genuinely cold air → pink frost
+    var snowy = cond.indexOf("snow") !== -1 || cond.indexOf("blizzard") !== -1 ||
+                cond.indexOf("sleet") !== -1 || cond.indexOf("ice") !== -1;
+    if (snowy || (tempC !== null && tempC <= 10)) return "cold";
+
+    // 2) Rain → storm blue
+    if (isRainy(data)) return "rainy";
+
+    // 3) Haze / fog / dust / smog → smoky grey-amber
+    var hazeWords = ["haze", "mist", "fog", "dust", "smoke", "smog"];
+    for (var h = 0; h < hazeWords.length; h++) {
+      if (cond.indexOf(hazeWords[h]) !== -1) return "haze";
+    }
+
+    // 4) Night → deep indigo (checked after weather conditions, so a rainy
+    //    night reads as rainy rather than just dark)
+    if (!isDay) return "night";
+
+    // 5) Strong wind → violet
+    if (typeof c.wind_kph === "number" && c.wind_kph > THRESHOLDS.WINDY_KPH) return "windy";
+
+    // 6) Temperature buckets — thresholds widened so everyday cities
+    //    actually look different (hot red / warm yellow / cool green)
+    if (tempC === null) return "warm";
+    if (tempC >= 30) return "hot";
+    if (tempC >= 20) return "warm";
+    if (tempC >= 11) return "cool";
+    return "cold";
+  }
 
   /* City signature ("famous") colours — vary the look when the weather
      theme is the same across cities (e.g., Mumbai sea-blue vs Delhi saffron). */
@@ -139,23 +179,6 @@
       if (name.indexOf(CITY_ACCENTS[i].match) !== -1) return CITY_ACCENTS[i].accent;
     }
     return "#06b6d4"; // default teal
-  }
-
-  function computeTheme(data) {
-    var c = data.current || {};
-    var tempC = typeof c.temp_c === "number" ? c.temp_c : null;
-    var isDay = c.is_day !== 0;
-    var cond = (c.condition && c.condition.text) ? String(c.condition.text).toLowerCase() : "";
-
-    var rainy = isRainy(data);
-    var snowy = cond.indexOf("snow") !== -1 || cond.indexOf("blizzard") !== -1 || cond.indexOf("sleet") !== -1 || cond.indexOf("ice") !== -1;
-
-    if (snowy || (tempC !== null && tempC <= 10)) return "winter";
-    if (rainy) return "rainy";
-    if (!isDay) return "night";
-    if (typeof c.wind_kph === "number" && c.wind_kph > THRESHOLDS.WINDY_KPH) return "windy";
-    if (tempC !== null && tempC >= 35) return "summer";
-    return "pleasant";
   }
 
   function applyTheme(theme, city) {
@@ -528,7 +551,7 @@
 
   function init() {
     buildChips();
-    document.body.setAttribute("data-theme", "pleasant"); // pre-fetch theme before data arrives
+    document.body.setAttribute("data-theme", "warm"); // pre-fetch theme before data arrives
     el.input.value = CONFIG.DEFAULT_CITY; // search input shows default city
     searchCity(CONFIG.DEFAULT_CITY);      // auto-fetch Mumbai weather on launch
   }
